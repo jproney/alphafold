@@ -50,7 +50,7 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, return_representations=False):
+               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, return_representations=False, all_reps=False):
     self.config = config
     self.params = params
 
@@ -61,6 +61,7 @@ class RunModel:
           is_training=False,
           compute_loss=False,
           return_representations=return_representations,
+          all_reps=all_reps,
           ensemble_representations=True)
 
     self.apply = jax.jit(hk.transform(_forward_fn).apply)

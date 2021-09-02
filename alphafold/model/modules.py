@@ -284,6 +284,7 @@ class AlphaFold(hk.Module):
       is_training,
       compute_loss=False,
       ensemble_representations=False,
+      all_reps=False,
       return_representations=False):
     """Run the AlphaFold model.
 
@@ -339,6 +340,7 @@ class AlphaFold(hk.Module):
           non_ensembled_batch=non_ensembled_batch,
           is_training=is_training,
           compute_loss=compute_loss,
+          all_reps=all_reps,
           ensemble_representations=ensemble_representations)
 
     if self.config.num_recycle:
