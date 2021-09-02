@@ -142,7 +142,7 @@ class AlphaFoldIteration(hk.Module):
                is_training,
                compute_loss=False,
                ensemble_representations=False,
-               return_representations=False):
+               all_reps=False):
 
     num_ensemble = jnp.asarray(ensembled_batch['seq_length'].shape[0])
 
@@ -158,7 +158,7 @@ class AlphaFoldIteration(hk.Module):
     evoformer_module = EmbeddingsAndEvoformer(
         self.config.embeddings_and_evoformer, self.global_config)
     batch0 = slice_batch(0)
-    representations = evoformer_module(batch0, is_training)
+    representations = evoformer_module(batch0, is_training, all_reps=all_reps)
 
     # MSA representations are not ensembled so
     # we don't pass tensor into the loop.
@@ -172,7 +172,7 @@ class AlphaFoldIteration(hk.Module):
         i, current_representations = x
         feats = slice_batch(i)
         representations_update = evoformer_module(
-            feats, is_training)
+            feats, is_training, all_reps=all_reps)
 
         new_representations = {}
         for k in current_representations:
@@ -1682,7 +1682,7 @@ class EmbeddingsAndEvoformer(hk.Module):
     self.config = config
     self.global_config = global_config
 
-  def __call__(self, batch, is_training, safe_key=None):
+  def __call__(self, batch, is_training, safe_key=None, all_reps=False):
 
     c = self.config
     gc = self.global_config
@@ -1872,23 +1872,41 @@ class EmbeddingsAndEvoformer(hk.Module):
     evoformer_iteration = EvoformerIteration(
         c.evoformer, gc, is_extra_msa=False, name='evoformer_iteration')
 
-    def evoformer_fn(x):
-      act, safe_key = x
-      safe_key, safe_subkey = safe_key.split()
-      evoformer_output = evoformer_iteration(
-          activations=act,
-          masks=evoformer_masks,
-          is_training=is_training,
-          safe_key=safe_subkey)
-      return (evoformer_output, safe_key)
+    if all_reps:
+      # version that outputs the intermediate representations at each layer
+      def evoformer_fn(x):
+        act, safe_key = x
+        safe_key, safe_subkey = safe_key.split()
+        evoformer_output = evoformer_iteration(
+            activations=act,
+            masks=evoformer_masks,
+            is_training=is_training,
+            safe_key=safe_subkey)
+        return (evoformer_output, safe_key), evoformer_output
+
+    else:
+      def evoformer_fn(x):
+        act, safe_key = x
+        safe_key, safe_subkey = safe_key.split()
+        evoformer_output = evoformer_iteration(
+            activations=act,
+            masks=evoformer_masks,
+            is_training=is_training,
+            safe_key=safe_subkey)
+        return (evoformer_output, safe_key)
 
     if gc.use_remat:
       evoformer_fn = hk.remat(evoformer_fn)
 
-    evoformer_stack = layer_stack.layer_stack(c.evoformer_num_block)(
+    evoformer_stack = layer_stack.layer_stack(c.evoformer_num_block, with_state=all_reps)(
         evoformer_fn)
-    evoformer_output, safe_key = evoformer_stack(
+    
+    if all_reps:
+      (evoformer_output, safe_key), reps = evoformer_stack(
         (evoformer_input, safe_key))
+    else:
+      evoformer_output, safe_key = evoformer_stack(
+          (evoformer_input, safe_key))
 
     msa_activations = evoformer_output['msa']
     pair_activations = evoformer_output['pair']
@@ -1905,6 +1923,10 @@ class EmbeddingsAndEvoformer(hk.Module):
         'msa': msa_activations[:num_sequences, :, :],
         'msa_first_row': msa_activations[0],
     }
+
+    if all_reps:
+      output["per_layer_msa"] = [r['msa'] for r in reps]
+      output["per_layer_pair"] = [r['pair'] for r in reps]
 
     return output
 
