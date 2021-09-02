@@ -50,9 +50,11 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, return_representations=False, all_reps=False):
+               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, return_representations=False, all_reps=False, all_cycles=False):
     self.config = config
     self.params = params
+    self.all_reps = all_reps
+    self.all_cycles = all_cycles
 
     def _forward_fn(batch):
       model = modules.AlphaFold(self.config.model)
@@ -62,6 +64,7 @@ class RunModel:
           compute_loss=False,
           return_representations=return_representations,
           all_reps=all_reps,
+          all_cycles=all_cycles,
           ensemble_representations=True)
 
     self.apply = jax.jit(hk.transform(_forward_fn).apply)
@@ -132,12 +135,21 @@ class RunModel:
     self.init_params(feat)
     logging.info('Running predict with shape(feat) = %s',
                  tree.map_structure(lambda x: x.shape, feat))
-    result = self.apply(self.params, jax.random.PRNGKey(0), feat)
-    # This block is to ensure benchmark timings are accurate. Some blocking is
-    # already happening when computing get_confidence_metrics, and this ensures
-    # all outputs are blocked on.
-    jax.tree_map(lambda x: x.block_until_ready(), result)
-    result.update(get_confidence_metrics(result))
-    logging.info('Output shape was %s',
-                 tree.map_structure(lambda x: x.shape, result))
-    return result
+
+    if self.all_cycles:
+      result, cycle_reps = self.apply(self.params, jax.random.PRNGKey(0), feat)
+      result.update(get_confidence_metrics(result))
+      if cycle_reps is not None:
+        cycle_reps.update({"prev_plddt":confidence.compute_plddt(cycle_reps["prev_predicted_lddt"])})
+
+      return result, cycle_reps
+    else:
+      result = self.apply(self.params, jax.random.PRNGKey(0), feat)
+      # This block is to ensure benchmark timings are accurate. Some blocking is
+      # already happening when computing get_confidence_metrics, and this ensures
+      # all outputs are blocked on.
+      jax.tree_map(lambda x: x.block_until_ready(), result)
+      result.update(get_confidence_metrics(result))
+      logging.info('Output shape was %s',
+                  tree.map_structure(lambda x: x.shape, result))
+      return result
