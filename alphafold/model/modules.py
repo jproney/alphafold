@@ -284,8 +284,9 @@ class AlphaFold(hk.Module):
       is_training,
       compute_loss=False,
       ensemble_representations=False,
+      all_cycles=False,
       all_reps=False,
-      return_representations=False):
+      return_representations=True):
     """Run the AlphaFold model.
 
     Arguments:
@@ -316,7 +317,11 @@ class AlphaFold(hk.Module):
               ret['structure_module']['final_atom_positions'],
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
+          'prev_predicted_lddt': ret['predicted_lddt']['logits']
       }
+      if all_reps:
+        new_prev['prev_per_layer_pair'] = ret['representations']['per_layer_pair']
+        new_prev['prev_per_layer_msa'] = ret['representations']['per_layer_msa']
       return jax.tree_map(jax.lax.stop_gradient, new_prev)
 
     def do_call(prev,
@@ -367,21 +372,25 @@ class AlphaFold(hk.Module):
         # Eval mode or tests: use the maximum number of iterations.
         num_iter = self.config.num_recycle
 
-      body = lambda x: (x[0] + 1,  # pylint: disable=g-long-lambda
-                        get_prev(do_call(x[1], recycle_idx=x[0],
-                                         compute_loss=False)))
+      if all_cycles:
+        def body(p,i):
+          p = get_prev(do_call(p, recycle_idx=i, compute_loss=False))
+          return p, p
+      else:
+        body = lambda x: (x[0] + 1,  # pylint: disable=g-long-lambda
+                          get_prev(do_call(x[1], recycle_idx=x[0],
+                                          compute_loss=False)))
       if hk.running_init():
         # When initializing the Haiku module, run one iteration of the
         # while_loop to initialize the Haiku modules used in `body`.
         _, prev = body((0, prev))
       else:
-        _, prev = hk.while_loop(
-            lambda x: x[0] < num_iter,
-            body,
-            (0, prev))
+        prev, cycle_reps = hk.scan(body, prev, jnp.arange(num_iter))
     else:
       prev = {}
       num_iter = 0
+      if all_cycles:
+        cycle_reps=None
 
     ret = do_call(prev=prev, recycle_idx=num_iter)
     if compute_loss:
@@ -389,6 +398,9 @@ class AlphaFold(hk.Module):
 
     if not return_representations:
       del (ret[0] if compute_loss else ret)['representations']  # pytype: disable=unsupported-operands
+
+    if cycle_reps:
+      return ret, cycle_reps
     return ret
 
 
