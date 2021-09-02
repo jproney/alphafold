@@ -376,16 +376,27 @@ class AlphaFold(hk.Module):
         def body(p,i):
           p = get_prev(do_call(p, recycle_idx=i, compute_loss=False))
           return p, p
+
+        if hk.running_init():
+          # When initializing the Haiku module, run one iteration of the
+          # while_loop to initialize the Haiku modules used in `body`.
+          prev, cycle_reps = body(prev, 0)
+        else:
+          prev, cycle_reps = hk.scan(body, prev, jnp.arange(num_iter))
       else:
         body = lambda x: (x[0] + 1,  # pylint: disable=g-long-lambda
                           get_prev(do_call(x[1], recycle_idx=x[0],
                                           compute_loss=False)))
-      if hk.running_init():
-        # When initializing the Haiku module, run one iteration of the
-        # while_loop to initialize the Haiku modules used in `body`.
-        _, prev = body((0, prev))
-      else:
-        prev, cycle_reps = hk.scan(body, prev, jnp.arange(num_iter))
+
+        if hk.running_init():
+          # When initializing the Haiku module, run one iteration of the
+          # while_loop to initialize the Haiku modules used in `body`.
+          _, prev = body((0, prev))
+        else:
+          _, prev = hk.while_loop(
+              lambda x: x[0] < num_iter,
+              body,
+              (0, prev))
     else:
       prev = {}
       num_iter = 0
