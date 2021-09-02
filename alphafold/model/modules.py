@@ -1927,8 +1927,8 @@ class EmbeddingsAndEvoformer(hk.Module):
     }
 
     if all_reps:
-      output["per_layer_msa"] = [r['msa'] for r in reps]
-      output["per_layer_pair"] = [r['pair'] for r in reps]
+      output["per_layer_msa"] = reps['msa']
+      output["per_layer_pair"] = reps['pair']
 
     return output
 
