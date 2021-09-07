@@ -320,8 +320,8 @@ class AlphaFold(hk.Module):
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
       }
       if all_reps:
-        new_prev['prev_per_layer_pair'] = ret['representations']['per_layer_pair']
-        new_prev['prev_per_layer_msa'] = ret['representations']['per_layer_msa']
+        new_prev['prev_per_layer_pair'] = jax.device_put(ret['representations']['per_layer_pair'], jax.devices("cpu")[0])
+        new_prev['prev_per_layer_msa'] = jax.device_put(ret['representations']['per_layer_msa'], jax.devices("cpu")[0])
       return jax.tree_map(jax.lax.stop_gradient, new_prev)
 
     def do_call(prev,
