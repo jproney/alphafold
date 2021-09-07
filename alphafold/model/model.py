@@ -50,7 +50,7 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, return_representations=False, all_reps=False, all_cycles=False):
+               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False):
     self.config = config
     self.params = params
     self.all_reps = all_reps
@@ -60,7 +60,7 @@ class RunModel:
       model = modules.AlphaFold(self.config.model)
       return model(
           batch,
-          is_training=False,
+          is_training=is_training,
           compute_loss=False,
           return_representations=return_representations,
           all_reps=all_reps,
@@ -122,7 +122,7 @@ class RunModel:
     logging.info('Output shape was %s', shape)
     return shape
 
-  def predict(self, feat: features.FeatureDict) -> Mapping[str, Any]:
+  def predict(self, feat: features.FeatureDict, random_seed=0) -> Mapping[str, Any]:
     """Makes a prediction by inferencing the model on the provided features.
 
     Args:
@@ -137,14 +137,14 @@ class RunModel:
                  tree.map_structure(lambda x: x.shape, feat))
 
     if self.all_cycles:
-      result, cycle_reps = self.apply(self.params, jax.random.PRNGKey(0), feat)
+      result, cycle_reps = self.apply(self.params, jax.random.PRNGKey(random_seed), feat)
       result.update(get_confidence_metrics(result))
       if cycle_reps is not None:
         cycle_reps.update({"prev_plddt":confidence.compute_plddt(cycle_reps["prev_predicted_lddt"])})
 
       return result, cycle_reps
     else:
-      result = self.apply(self.params, jax.random.PRNGKey(0), feat)
+      result = self.apply(self.params, jax.random.PRNGKey(random_seed), feat)
       # This block is to ensure benchmark timings are accurate. Some blocking is
       # already happening when computing get_confidence_metrics, and this ensures
       # all outputs are blocked on.
