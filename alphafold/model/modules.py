@@ -322,8 +322,8 @@ class AlphaFold(hk.Module):
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
       }
       if all_reps:
-        new_prev['prev_per_layer_pair'] = ret['representations']['per_layer_pair']
-        new_prev['prev_per_layer_msa'] = ret['representations']['per_layer_msa']
+        for r in rep_keys:
+          new_prev['prev_per_layer_' + r] = ret['representations']['per_layer_' + r]
       return jax.tree_map(jax.lax.stop_gradient, new_prev)
 
     def do_call(prev,
@@ -1846,6 +1846,7 @@ class EmbeddingsAndEvoformer(hk.Module):
     evoformer_input = {
         'msa': msa_activations,
         'pair': pair_activations,
+        'msa_first_row': msa_activations[0]
     }
 
     evoformer_masks = {'msa': batch['msa_mask'], 'pair': mask_2d}
