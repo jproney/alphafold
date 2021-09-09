@@ -142,7 +142,8 @@ class AlphaFoldIteration(hk.Module):
                is_training,
                compute_loss=False,
                ensemble_representations=False,
-               all_reps=False):
+               all_reps=False,
+               rep_keys=('msa_first_row', 'msa', 'pair')):
 
     num_ensemble = jnp.asarray(ensembled_batch['seq_length'].shape[0])
 
@@ -158,7 +159,7 @@ class AlphaFoldIteration(hk.Module):
     evoformer_module = EmbeddingsAndEvoformer(
         self.config.embeddings_and_evoformer, self.global_config)
     batch0 = slice_batch(0)
-    representations = evoformer_module(batch0, is_training, all_reps=all_reps)
+    representations = evoformer_module(batch0, is_training, all_reps=all_reps, rep_keys=rep_keys)
 
     # MSA representations are not ensembled so
     # we don't pass tensor into the loop.
@@ -286,6 +287,7 @@ class AlphaFold(hk.Module):
       ensemble_representations=False,
       all_cycles=False,
       all_reps=False,
+      rep_keys=('msa_first_row', 'msa', 'pair'),
       return_representations=True):
     """Run the AlphaFold model.
 
@@ -346,6 +348,7 @@ class AlphaFold(hk.Module):
           is_training=is_training,
           compute_loss=compute_loss,
           all_reps=all_reps,
+          rep_keys=rep_keys,
           ensemble_representations=ensemble_representations)
 
     if self.config.num_recycle:
@@ -1711,7 +1714,7 @@ class EmbeddingsAndEvoformer(hk.Module):
     self.config = config
     self.global_config = global_config
 
-  def __call__(self, batch, is_training, safe_key=None, all_reps=False):
+  def __call__(self, batch, is_training, safe_key=None, all_reps=False, rep_keys=('msa_first_row', 'msa', 'pair')):
 
     c = self.config
     gc = self.global_config
@@ -1911,7 +1914,9 @@ class EmbeddingsAndEvoformer(hk.Module):
             masks=evoformer_masks,
             is_training=is_training,
             safe_key=safe_subkey)
-        return (evoformer_output, safe_key), evoformer_output
+
+        evoformer_output["msa_first_row"] = evoformer_output["msa"][0]
+        return (evoformer_output, safe_key), {r : evoformer_output[r] for r in rep_keys}
 
     else:
       def evoformer_fn(x):
@@ -1954,8 +1959,8 @@ class EmbeddingsAndEvoformer(hk.Module):
     }
 
     if all_reps:
-      output["per_layer_msa"] = reps['msa']
-      output["per_layer_pair"] = reps['pair']
+      for r in reps.keys():
+        output["per_layer_" + r] = reps[r]
 
     return output
 

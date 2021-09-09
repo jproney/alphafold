@@ -50,11 +50,12 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False):
+               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False, rep_keys=('msa_first_row', 'msa', 'pair')):
     self.config = config
     self.params = params
     self.all_reps = all_reps
     self.all_cycles = all_cycles
+    self.rep_keys = rep_keys
 
     def _forward_fn(batch):
       model = modules.AlphaFold(self.config.model)
@@ -65,6 +66,7 @@ class RunModel:
           return_representations=return_representations,
           all_reps=all_reps,
           all_cycles=all_cycles,
+          rep_keys=rep_keys,
           ensemble_representations=True)
 
     self.apply = jax.jit(hk.transform(_forward_fn).apply)
