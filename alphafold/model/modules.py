@@ -365,6 +365,7 @@ class AlphaFold(hk.Module):
       if all_reps:
          prev['prev_per_layer_pair'] = jnp.zeros([emb_config.evoformer_num_block, num_residues, num_residues, emb_config.pair_channel])    
          prev['prev_per_layer_msa'] = jnp.zeros([emb_config.evoformer_num_block, batch['msa_feat'].shape[1], num_residues, emb_config.msa_channel])  # Need to fix this!
+         prev['prev_per_layer_msa_first_row'] = jnp.zeros([emb_config.evoformer_num_block, num_residues, emb_config.msa_channel])  # Need to fix this!
 
       if 'num_iter_recycling' in batch:
         # Training time: num_iter_recycling is in batch.
