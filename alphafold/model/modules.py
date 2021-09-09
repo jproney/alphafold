@@ -363,13 +363,13 @@ class AlphaFold(hk.Module):
           'prev_predicted_lddt': jnp.zeros([num_residues, 50]),
       }
       if all_reps:
-        if 'prev_per_layer_pair' in rep_keys:
+        if 'pair' in rep_keys:
          prev['prev_per_layer_pair'] = jnp.zeros([emb_config.evoformer_num_block, num_residues, num_residues, emb_config.pair_channel]) 
 
-        if 'prev_per_layer_msa' in rep_keys:
+        if 'msa' in rep_keys:
          prev['prev_per_layer_msa'] = jnp.zeros([emb_config.evoformer_num_block, batch['msa_feat'].shape[1], num_residues, emb_config.msa_channel])  # Need to fix this!
 
-        if 'prev_per_layer_msa_first_row' in rep_keys:
+        if 'msa_first_row' in rep_keys:
          prev['prev_per_layer_msa_first_row'] = jnp.zeros([emb_config.evoformer_num_block, num_residues, emb_config.msa_channel])  # Need to fix this!
 
       if 'num_iter_recycling' in batch:
