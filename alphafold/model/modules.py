@@ -288,7 +288,8 @@ class AlphaFold(hk.Module):
       all_cycles=False,
       all_reps=False,
       rep_keys=('msa_first_row', 'msa', 'pair'),
-      return_representations=True):
+      return_representations=True,
+      injected_positions=None):
     """Run the AlphaFold model.
 
     Arguments:
@@ -355,7 +356,7 @@ class AlphaFold(hk.Module):
       emb_config = self.config.embeddings_and_evoformer
       prev = {
           'prev_pos': jnp.zeros(
-              [num_residues, residue_constants.atom_type_num, 3]),
+              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) else injected_positions,
           'prev_msa_first_row': jnp.zeros(
               [num_residues, emb_config.msa_channel]),
           'prev_pair': jnp.zeros(
