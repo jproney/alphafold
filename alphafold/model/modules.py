@@ -317,7 +317,7 @@ class AlphaFold(hk.Module):
     def get_prev(ret):
       new_prev = {
           'prev_pos':
-              ret['structure_module']['final_atom_positions'],
+              ret['structure_module']['final_atom_positions'] if (injected_positions is None) else injected_positions,
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
