@@ -289,7 +289,8 @@ class AlphaFold(hk.Module):
       all_reps=False,
       rep_keys=('msa_first_row', 'msa', 'pair'),
       return_representations=True,
-      injected_positions=None):
+      injected_positions=None,
+      inject_all=False):
     """Run the AlphaFold model.
 
     Arguments:
@@ -317,7 +318,7 @@ class AlphaFold(hk.Module):
     def get_prev(ret):
       new_prev = {
           'prev_pos':
-              ret['structure_module']['final_atom_positions'] if (injected_positions is None) else injected_positions,
+              ret['structure_module']['final_atom_positions'] if ((injected_positions is None) or (not inject_all)) else injected_positions,
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
