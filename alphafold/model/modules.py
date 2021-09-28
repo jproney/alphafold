@@ -319,7 +319,7 @@ class AlphaFold(hk.Module):
       new_prev = {
           'prev_pos':
               ret['structure_module']['final_atom_positions'] if injected_positions is None else 
-                ret['structure_module']['final_atom_positions']*(1 - inject_iters[idx]) + injected_positions*inject_iters[idx], #arithmetic control flow hack to make JAX happy
+                ret['structure_module']['final_atom_positions']*(1 - inject_iters[idx]) + injected_positions*jax.device_put(inject_iters)[idx], #arithmetic control flow hack to make JAX happy
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
@@ -358,7 +358,7 @@ class AlphaFold(hk.Module):
       emb_config = self.config.embeddings_and_evoformer
       prev = {
           'prev_pos': jnp.zeros(
-              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) else injected_positions*inject_iters[0],
+              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) else injected_positions*jax.device_put(inject_iters)[0],
           'prev_msa_first_row': jnp.zeros(
               [num_residues, emb_config.msa_channel]),
           'prev_pair': jnp.zeros(
