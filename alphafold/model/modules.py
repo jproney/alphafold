@@ -290,7 +290,7 @@ class AlphaFold(hk.Module):
       rep_keys=('msa_first_row', 'msa', 'pair'),
       return_representations=True,
       injected_positions=None,
-      inject_iters=(0,)):
+      inject_iters=None):
     """Run the AlphaFold model.
 
     Arguments:
@@ -315,12 +315,11 @@ class AlphaFold(hk.Module):
     impl = AlphaFoldIteration(self.config, self.global_config)
     batch_size, num_residues = batch['aatype'].shape
 
-    @partial(jit, static_argnums=(1,))
     def get_prev(ret, idx):
       new_prev = {
           'prev_pos':
-              ret['structure_module']['final_atom_positions']*((injected_positions is None) + (injected_positions is not None)*(idx not in inject_iters)) 
-                + injected_positions*(injected_positions is not None)*(idx in inject_iters), #arithmetic control flow hack to make JAX happy
+              ret['structure_module']['final_atom_positions'] if injected_positions is None else 
+                ret['structure_module']['final_atom_positions']*(1 - inject_iters[idx]) + injected_positions*inject_iters[idx], #arithmetic control flow hack to make JAX happy
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
@@ -330,7 +329,6 @@ class AlphaFold(hk.Module):
           new_prev['prev_per_layer_' + r] = ret['representations']['per_layer_' + r]
       return jax.tree_map(jax.lax.stop_gradient, new_prev)
 
-    @partial(jit, static_argnums=(1,))
     def do_call(prev,
                 recycle_idx,
                 compute_loss=compute_loss):
@@ -360,7 +358,7 @@ class AlphaFold(hk.Module):
       emb_config = self.config.embeddings_and_evoformer
       prev = {
           'prev_pos': jnp.zeros(
-              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) or (0 not in inject_iters) else injected_positions,
+              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) or (not inject_iters[0]) else injected_positions,
           'prev_msa_first_row': jnp.zeros(
               [num_residues, emb_config.msa_channel]),
           'prev_pair': jnp.zeros(
@@ -391,7 +389,6 @@ class AlphaFold(hk.Module):
         num_iter = self.config.num_recycle
 
       if all_cycles:
-        @partial(jit, static_argnums=(1,))
         def body(p,i):
           p = get_prev(do_call(p, recycle_idx=i, compute_loss=False), i)
           return p, p

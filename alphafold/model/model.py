@@ -50,7 +50,7 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False, rep_keys=('msa_first_row', 'msa', 'pair'), injected_positions=None, injected_iters=(0,)):
+               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False, rep_keys=('msa_first_row', 'msa', 'pair'), injected_positions=None, injected_iters=None):
     self.config = config
     self.params = params
     self.all_reps = all_reps
