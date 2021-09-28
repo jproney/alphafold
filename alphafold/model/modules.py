@@ -358,7 +358,7 @@ class AlphaFold(hk.Module):
       emb_config = self.config.embeddings_and_evoformer
       prev = {
           'prev_pos': jnp.zeros(
-              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) or (not inject_iters[0]) else injected_positions,
+              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) else injected_positions*inject_iters[0],
           'prev_msa_first_row': jnp.zeros(
               [num_residues, emb_config.msa_channel]),
           'prev_pair': jnp.zeros(
