@@ -319,7 +319,7 @@ class AlphaFold(hk.Module):
       new_prev = {
           'prev_pos':
               ret['structure_module']['final_atom_positions'] if injected_positions is None else 
-                ret['structure_module']['final_atom_positions']*(1 - inject_iters[idx]) + injected_positions*jax.device_put(inject_iters)[idx], #arithmetic control flow hack to make JAX happy
+                ret['structure_module']['final_atom_positions']*(1 - jax.device_put(inject_iters)[idx]) + injected_positions*jax.device_put(inject_iters)[idx], #arithmetic control flow hack to make JAX happy
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
