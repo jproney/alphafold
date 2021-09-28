@@ -318,7 +318,8 @@ class AlphaFold(hk.Module):
     def get_prev(ret, idx):
       new_prev = {
           'prev_pos':
-              ret['structure_module']['final_atom_positions'] if ((injected_positions is None) or (idx not in inject_iters)) else injected_positions,
+              ret['structure_module']['final_atom_positions']*((injected_positions is None) + (injected_positions is not None)*(idx not in inject_iters)) 
+                + injected_positions*(injected_positions is not None)*(idx in inject_iters), #arithmetic control flow hack to make JAX happy
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
