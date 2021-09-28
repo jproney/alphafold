@@ -50,7 +50,7 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False, rep_keys=('msa_first_row', 'msa', 'pair'), injected_positions=None):
+               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None, is_training=False, return_representations=False, all_reps=False, all_cycles=False, rep_keys=('msa_first_row', 'msa', 'pair'), injected_positions=None, injected_iters=(0,)):
     self.config = config
     self.params = params
     self.all_reps = all_reps
@@ -68,7 +68,8 @@ class RunModel:
           all_cycles=all_cycles,
           rep_keys=rep_keys,
           ensemble_representations=True,
-          injected_positions=injected_positions)
+          injected_positions=injected_positions,
+          inject_iters=injected_iters)
 
     self.apply = jax.jit(hk.transform(_forward_fn).apply)
     self.init = jax.jit(hk.transform(_forward_fn).init)

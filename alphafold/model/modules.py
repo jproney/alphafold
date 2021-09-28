@@ -290,7 +290,7 @@ class AlphaFold(hk.Module):
       rep_keys=('msa_first_row', 'msa', 'pair'),
       return_representations=True,
       injected_positions=None,
-      inject_all=False):
+      inject_iters=(0,)):
     """Run the AlphaFold model.
 
     Arguments:
@@ -315,10 +315,10 @@ class AlphaFold(hk.Module):
     impl = AlphaFoldIteration(self.config, self.global_config)
     batch_size, num_residues = batch['aatype'].shape
 
-    def get_prev(ret):
+    def get_prev(ret, idx):
       new_prev = {
           'prev_pos':
-              ret['structure_module']['final_atom_positions'] if ((injected_positions is None) or (not inject_all)) else injected_positions,
+              ret['structure_module']['final_atom_positions'] if ((injected_positions is None) or (idx not in inject_iters)) else injected_positions,
           'prev_msa_first_row': ret['representations']['msa_first_row'],
           'prev_pair': ret['representations']['pair'],
           'prev_predicted_lddt': ret['predicted_lddt']['logits']
@@ -357,7 +357,7 @@ class AlphaFold(hk.Module):
       emb_config = self.config.embeddings_and_evoformer
       prev = {
           'prev_pos': jnp.zeros(
-              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) else injected_positions,
+              [num_residues, residue_constants.atom_type_num, 3]) if (injected_positions is None) or (0 not in inject_iters) else injected_positions,
           'prev_msa_first_row': jnp.zeros(
               [num_residues, emb_config.msa_channel]),
           'prev_pair': jnp.zeros(
@@ -389,7 +389,7 @@ class AlphaFold(hk.Module):
 
       if all_cycles:
         def body(p,i):
-          p = get_prev(do_call(p, recycle_idx=i, compute_loss=False))
+          p = get_prev(do_call(p, recycle_idx=i, compute_loss=False), i)
           return p, p
 
         if hk.running_init():
@@ -401,7 +401,7 @@ class AlphaFold(hk.Module):
       else:
         body = lambda x: (x[0] + 1,  # pylint: disable=g-long-lambda
                           get_prev(do_call(x[1], recycle_idx=x[0],
-                                          compute_loss=False)))
+                                          compute_loss=False), x[0]))
 
         if hk.running_init():
           # When initializing the Haiku module, run one iteration of the
