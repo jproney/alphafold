@@ -315,6 +315,7 @@ class AlphaFold(hk.Module):
     impl = AlphaFoldIteration(self.config, self.global_config)
     batch_size, num_residues = batch['aatype'].shape
 
+    @partial(jit, static_argnums=(1,))
     def get_prev(ret, idx):
       new_prev = {
           'prev_pos':
@@ -329,6 +330,7 @@ class AlphaFold(hk.Module):
           new_prev['prev_per_layer_' + r] = ret['representations']['per_layer_' + r]
       return jax.tree_map(jax.lax.stop_gradient, new_prev)
 
+    @partial(jit, static_argnums=(1,))
     def do_call(prev,
                 recycle_idx,
                 compute_loss=compute_loss):
@@ -389,6 +391,7 @@ class AlphaFold(hk.Module):
         num_iter = self.config.num_recycle
 
       if all_cycles:
+        @partial(jit, static_argnums=(1,))
         def body(p,i):
           p = get_prev(do_call(p, recycle_idx=i, compute_loss=False), i)
           return p, p
