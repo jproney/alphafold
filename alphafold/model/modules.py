@@ -1823,6 +1823,7 @@ class EmbeddingsAndEvoformer(hk.Module):
     extra_msa_stack_input = {
         'msa': extra_msa_activations,
         'pair': pair_activations,
+        'msa_first_row' : extra_msa_activations[0]
     }
 
     extra_msa_stack_iteration = EvoformerIteration(
