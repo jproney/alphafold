@@ -1852,11 +1852,17 @@ class EmbeddingsAndEvoformer(hk.Module):
 
     pair_activations = extra_msa_output['pair']
 
-    evoformer_input = {
-        'msa': msa_activations,
-        'pair': pair_activations,
-        'msa_first_row': msa_activations[0]
-    }
+    if all_reps:
+      evoformer_input = {
+          'msa': msa_activations,
+          'pair': pair_activations,
+          'msa_first_row': msa_activations[0]
+      }
+    else:
+      evoformer_input = {
+          'msa': msa_activations,
+          'pair': pair_activations,
+      }
 
     evoformer_masks = {'msa': batch['msa_mask'], 'pair': mask_2d}
 
