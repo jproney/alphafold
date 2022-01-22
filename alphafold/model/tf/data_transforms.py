@@ -395,8 +395,8 @@ def make_masked_msa(protein, config, replace_fraction):
   categorical_probs = tf.pad(
       categorical_probs, pad_shapes, constant_values=mask_prob)
 
-  if "bert_mask" in protein:
-    mask_position = protein["bert_mask"]
+  if "input_bert_mask" in protein:
+    mask_position = protein["input_bert_mask"]
   else:
     sh = shape_helpers.shape_list(protein['msa'])
     mask_position = tf.random.uniform(sh) < replace_fraction

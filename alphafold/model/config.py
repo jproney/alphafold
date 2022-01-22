@@ -114,7 +114,7 @@ CONFIG = ml_collections.ConfigDict({
             'unsupervised_features': [
                 'aatype', 'residue_index', 'sequence', 'msa', 'domain_name',
                 'num_alignments', 'seq_length', 'between_segment_residues',
-                'deletion_matrix'
+                'deletion_matrix', 'input_bert_mask'
             ],
             'use_templates': False,
         },
