@@ -184,6 +184,9 @@ def sample_msa(protein, max_seq, keep_extra):
         protein['extra_' + k] = tf.gather(protein[k], not_sel_seq)
       protein[k] = tf.gather(protein[k], sel_seq)
 
+  if "input_bert_mask" in protein:
+    protein["input_bert_mask"] = tf.gather(protein["input_bert_mask"], sel_seq)
+
   return protein
 
 
