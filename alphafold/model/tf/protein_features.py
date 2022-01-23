@@ -45,7 +45,7 @@ FEATURES = {
     "deletion_matrix": (tf.float32, [NUM_SEQ, NUM_RES, 1]),
     "domain_name": (tf.string, [1]),
     "msa": (tf.int64, [NUM_SEQ, NUM_RES, 1]),
-    "input_bert_mask": (tf.int64, [NUM_SEQ, NUM_RES, 1]),
+    "input_bert_mask": (tf.int64, [NUM_SEQ, NUM_RES]),
     "num_alignments": (tf.int64, [NUM_RES, 1]),
     "residue_index": (tf.int64, [NUM_RES, 1]),
     "seq_length": (tf.int64, [NUM_RES, 1]),
