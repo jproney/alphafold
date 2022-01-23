@@ -16,7 +16,10 @@
 import enum
 from typing import Dict, Optional, Sequence, Tuple, Union
 from alphafold.common import residue_constants
+from alphafold.model.tf import shape_placeholders
 import tensorflow.compat.v1 as tf
+
+NUM_MSA_SEQ = shape_placeholders.NUM_MSA_SEQ
 
 # Type aliases.
 FeaturesMetadata = Dict[str, Tuple[tf.dtypes.DType, Sequence[Union[str, int]]]]
@@ -45,7 +48,7 @@ FEATURES = {
     "deletion_matrix": (tf.float32, [NUM_SEQ, NUM_RES, 1]),
     "domain_name": (tf.string, [1]),
     "msa": (tf.int64, [NUM_SEQ, NUM_RES, 1]),
-    "input_bert_mask": (tf.int64, [NUM_SEQ, NUM_RES, 1]),
+    "input_bert_mask": (tf.int64, [NUM_MSA_SEQ, NUM_RES]),
     "num_alignments": (tf.int64, [NUM_RES, 1]),
     "residue_index": (tf.int64, [NUM_RES, 1]),
     "seq_length": (tf.int64, [NUM_RES, 1]),
