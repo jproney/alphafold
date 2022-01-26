@@ -159,6 +159,7 @@ CONFIG = ml_collections.ConfigDict({
                 'rigidgroups_gt_frames': [NUM_RES, None, None],
                 'seq_length': [],
                 'seq_mask': [NUM_RES],
+                'target_feat_mask': [NUM_RES],
                 'target_feat': [NUM_RES, None],
                 'template_aatype': [NUM_TEMPLATES, NUM_RES],
                 'template_all_atom_masks': [NUM_TEMPLATES, NUM_RES, None],
