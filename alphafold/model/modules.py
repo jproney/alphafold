@@ -1695,7 +1695,7 @@ class EmbeddingsAndEvoformer(hk.Module):
     # Jumper et al. (2021) Suppl. Alg. 3 "InputEmbedder"
     preprocess_1d = common_modules.Linear(
         c.msa_channel, name='preprocess_1d')(
-            batch['target_feat'])
+            batch['target_feat']) * batch["target_feat_mask"]
 
     preprocess_msa = common_modules.Linear(
         c.msa_channel, name='preprocess_msa')(
@@ -1705,10 +1705,10 @@ class EmbeddingsAndEvoformer(hk.Module):
 
     left_single = common_modules.Linear(
         c.pair_channel, name='left_single')(
-            batch['target_feat'])
+            batch['target_feat']) * batch["target_feat_mask"]
     right_single = common_modules.Linear(
         c.pair_channel, name='right_single')(
-            batch['target_feat'])
+            batch['target_feat']) * batch["target_feat_mask"]
     pair_activations = left_single[:, None] + right_single[None]
     mask_2d = batch['seq_mask'][:, None] * batch['seq_mask'][None, :]
 
